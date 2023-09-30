@@ -96,11 +96,11 @@ function Search-mTMDBMovie {
 		if ($ReleaseDate) {
 			#$ReleaseDate = [System.String]$ReleaseDate
 			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title and Search"
-			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&primary_release_year=$($ReleaseDate)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | select -ExpandProperty Results | select id,title,release_date,overview
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&primary_release_year=$($ReleaseDate)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id,title,release_date,overview
 		}
 		else {
 			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title"
-			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | select -ExpandProperty Results | select id,title,release_date,overview
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id,title,release_date,overview
 			#TODO: Create Format.ps1xml file for this output.  https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_format.ps1xml?view=powershell-7.3
 		}
 

@@ -6,7 +6,7 @@
 	[int]$OutputProperty2
 }#>
 
-function Find-mTMDBMovie {
+function Search-mTMDBMovie {
 
 <#
 	.SYNOPSIS
@@ -47,8 +47,8 @@ function Find-mTMDBMovie {
 	[cmdletbinding(SupportsShouldProcess = $false, ConfirmImpact = "None", PositionalBinding = $true, SupportsPaging = $false, SupportsTransactions = $false, RemotingCapability = 'None', HelpUri = "changeme")] #TODO: Evaluate which cmdletbinding options are appropriate for the script.
 
 	param (
-		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]$Title, #TODO: Update parameters
-		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $true)]$ReleaseDate
+		[Parameter(Position = 0, Mandatory = $true,  ValueFromPipeline = $true) ][System.string]$Title,
+		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $false)][System.string]$ReleaseDate
 	)
 	
 	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
@@ -66,14 +66,14 @@ function Find-mTMDBMovie {
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
 
 		# Test for required functions that aren't in required modules.  Remove this section if it's not needed.
-		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine", "InsertAnotherFunctionNameHere" #TODO: Update "InsertAnotherFunctionNameHere"
+		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine"
 		$FunctionList | ForEach-Object {
 			if (Test-Path -Path function:\"$($_)") { Write-Verbose -Message "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is not loaded in the session." }
 		}
 
 		# Test for required modules.  Internal support modules and vendor specific technology modules in addition to the builtin Microsoft PowerShell modules.  Remove this section if it's not needed.
-		$ModuleList = "mPowerShellGenerics", "Microsoft.PowerShell.Security", "InsertAnotherModuleNameHere" #TODO: Update "InsertAnotherModuleNameHere"
+		$ModuleList = "mPowerShellGenerics"
 		$ModuleList | ForEach-Object {
 			if (Test-mIsModuleLoaded -Name $_) { Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is not loaded in the session." }
@@ -85,16 +85,24 @@ function Find-mTMDBMovie {
 
 	process { # Code to be executed against every object in the pipeline goes here.
 
-		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - Title $($Title) - ReleaseDate $($ReleaseDate) - param3 $($param3)" #TODO: Update parameter names.
+		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - Title $($Title) - ReleaseDate $($ReleaseDate)" #TODO: Update parameter names.
 
-		#TODO: Validate the parameters as needed.
-		if ("Title tested valid") { Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Title $($Title) is somevalidationmessage." }
-		else {
-			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Title $($Title) is somevalidationFAILEDmessage.  Exiting."
-			break
-		}
+		#TODO: Validate $ReleaseDate is one of these formats: "YYYY", "YYYY-MM", or "YYYY-MM-DD"
 
 		# Do the work
+
+		$SearchTitle = $Title -replace(" ","+")
+
+		if ($ReleaseDate) {
+			#$ReleaseDate = [System.String]$ReleaseDate
+			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title and Search"
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&primary_release_year=$($ReleaseDate)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | select -ExpandProperty Results | select id,title,release_date,overview
+		}
+		else {
+			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title"
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | select -ExpandProperty Results | select id,title,release_date,overview
+			#TODO: Create Format.ps1xml file for this output.  https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_format.ps1xml?view=powershell-7.3
+		}
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block end"
 

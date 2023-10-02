@@ -48,7 +48,8 @@ function Search-mTMDBMovie {
 
 	param (
 		[Parameter(Position = 0, Mandatory = $true,  ValueFromPipeline = $true) ][System.string]$Title,
-		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $false)][System.string]$ReleaseDate
+		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $false)][System.string]$ReleaseDate,
+		[Parameter(Position = 1, Mandatory = $true,  ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken
 	)
 	
 	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
@@ -77,6 +78,18 @@ function Search-mTMDBMovie {
 		$ModuleList | ForEach-Object {
 			if (Test-mIsModuleLoaded -Name $_) { Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is not loaded in the session." }
+		}
+
+		# Set and Test API credential in API call headers
+		$headers=@{}
+		$headers.Add("accept", "application/json")
+		$headers.Add("Authorization", "Bearer $TMDBReadOnlyToken")
+		$response = Invoke-WebRequest -Uri 'https://api.themoviedb.org/3/authentication' -Method GET -Headers $headers
+		if ($response.StatusCode -eq 200) {
+            Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded." }
+		else {
+			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded.  Exiting."
+			break
 		}
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Begin block end"

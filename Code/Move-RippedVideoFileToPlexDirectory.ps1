@@ -29,7 +29,7 @@ $NewBasePath
 $NewExtrasPath
 
 if (Test-Path $RippingDirectory) { Set-Location $RippingDirectory } else { throw "The ripping directory doesn't exist: $($RippingDirectory)" }
-Get-ChildItem $RippedDirName | sort Length  # To see if the "t00" file is the largest one.  Otherwise exit and investigate.
+Get-ChildItem $RippedDirName | Sort-Object Length  # To see if the "t00" file is the largest one.  Otherwise exit and investigate.
 Pause
 
 if ( (Test-Path $RippedDirName) -and ((Get-ChildItem "$($RippedDirName)\*t00.mkv").Count -eq 1) ) {
@@ -44,12 +44,11 @@ if ( (Test-Path $RippedDirName) -and ((Get-ChildItem "$($RippedDirName)\*t00.mkv
     # Move and rename t00 file to the Plex naming convention.
     Set-Location $NewBasePath
     Move-Item -Path (Get-ChildItem "$($RippingDirectory)\$($RippedDirName)\*t00.mkv") -Destination ("$($base)_t00.mkv" -replace("_t00"," $($year)"))
-  
-    
+
     # Move and rename extra files to the Plex naming convention.
     Set-Location $RippingDirectory\$NewExtrasPath
     Get-ChildItem
-   
+
     Get-ChildItem | ForEach-Object {
         $_;
         Move-Item -Path $_ -Destination ("$($base) $($year)-$($_.Name)")

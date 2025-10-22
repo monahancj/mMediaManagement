@@ -47,11 +47,10 @@ function Get-mTMDBMovieFromMovieDirectory {
 	[cmdletbinding(SupportsShouldProcess = $false, ConfirmImpact = "High", PositionalBinding = $true, DefaultParameterSetName = "changeme", SupportsPaging = $false, SupportsTransactions = $false, RemotingCapability = 'None', HelpUri = "changeme")]#TODO: Evaluate which cmdletbinding options are appropriate for the script.
 
 	param (
-		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]$Param1, #TODO: Update parameters
-		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $true)]$Param2,
-		[Parameter(Position = 2, Mandatory = $false, ValueFromPipeline = $false)]$Param3
+		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken,
+		[Parameter(Position = 2, Mandatory = $true, ValueFromPipeline = $false)][System.string]$Directory
 	)
-	
+
 	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
@@ -67,18 +66,23 @@ function Get-mTMDBMovieFromMovieDirectory {
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
 
 		# Test for required functions that aren't in required modules.  Remove this section if it's not needed.
-		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine", "InsertAnotherFunctionNameHere" #TODO: Update "InsertAnotherFunctionNameHere"
+		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine"
 		$FunctionList | ForEach-Object {
 			if (Test-Path -Path function:\"$($_)") { Write-Verbose -Message "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is not loaded in the session." }
 		}
 
 		# Test for required modules.  Internal support modules and vendor specific technology modules in addition to the builtin Microsoft PowerShell modules.  Remove this section if it's not needed.
-		$ModuleList = "mPowerShellGenerics", "Microsoft.PowerShell.Security", "InsertAnotherModuleNameHere" #TODO: Update "InsertAnotherModuleNameHere"
+		$ModuleList = "mPowerShellGenerics"
 		$ModuleList | ForEach-Object {
 			if (Test-mIsModuleLoaded -Name $_) { Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is not loaded in the session." }
 		}
+
+		# Set and Test API credential in API call headers
+		$headers=@{}
+		$headers.Add("accept", "application/json")
+		$headers.Add("Authorization", "Bearer $TMDBReadOnlyToken")
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Begin block end"
 
@@ -86,29 +90,59 @@ function Get-mTMDBMovieFromMovieDirectory {
 
 	process { # Code to be executed against every object in the pipeline goes here.
 
-		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - param1 $($param1) - param2 $($param2) - param3 $($param3)" #TODO: Update parameter names.
+		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - Parameter -Directory $($Directory)"
 
+		<# Example code snippet
+
+		$headers=@{}
+		$headers.Add("accept", "application/json")
+		$headers.Add("Authorization", "Bearer $tmdbreadonlytoken")
+		$response = $response = Invoke-WebRequest -Uri 'https://api.themoviedb.org/3/search/movie?query=patton&primary_release_year=1970&include_adult=false&language=en-US&page=1' -Method GET -Headers $headers
+		$response | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | select -ExpandProperty Results | select id,title,release_date,overview | ft -a
+
+#>
 		#TODO: Validate the parameters as needed.
-		if ("param1 tested valid") { Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - param1 $($param1) is somevalidationmessage." }
+		if (Test-Path $Directory) {
+            Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -Directory as $($Directory) exists." }
 		else {
-			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - param1 $($param1) is somevalidationFAILEDmessage.  Exiting."
+			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -Directory as $($Directory) does not exist.  Exiting."
 			break
 		}
 
 		# Do the work
 
+		$Directory = (Get-ChildItem $Directory)[0].Directory
+		Write-Verbose -Message "Line $(Get-mCurrentLine) - $($Directory) -- $((Get-ChildItem $Directory)[0].Directory); $($Directory)"
+
+		$MovieName   = ((($Directory.Split("\"))[-1]).Split("("))[0]
+		#Write-Verbose -Message "Line $(Get-mCurrentLine) - $(($Directory)) -- $(((($Directory.Split("\"))[-1]).Split("("))[0]) -- $($MovieName)"
+		#Write-Output "$($MovieName)"
+
+		$ReleaseYear = ($Directory.Split("("))[-1].Split(")")
+		Write-Verbose -Message "Line $(Get-mCurrentLine) - $($Directory) -- $(($Directory.Split("("))[-1].Split(")")) -- $($ReleaseYear)"
+
+		Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Query Parameters: $($Directory) -- $($MovieName) -- $($ReleaseYear)"
+
+		$headers=@{}
+		$headers.Add("accept", "application/json")
+		$headers.Add("Authorization", "Bearer $tmdbreadonlytoken")
+		$response = $response = Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($MovieName)&primary_release_year=$($ReleaseYear)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers
+
+		return ($response | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id,title,release_date,overview)
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block end"
 
 	} #end of the process block
-	
+
 	end {  # Code to be executed once AFTER the pipeline is processed goes here.  Disconnect server connections, remove variables, reset the transcript file if necessary, and any other cleanup.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - End block start"
+
+		$ErrorActionPreference = $EAPsaved
+
 		# When testing comment out "-ErrorAction SilentlyContinue".  This will help find typos, unused variables, and other problems.
-		Remove-Variable -Name ModuleList, FunctionList, Param1, Param2, Param3 -WhatIf:$false #TODO: When function is production ready uncomment the -ErrorAcction parameter # -ErrorAction SilentlyContinue # Using -WhatIf:$false to suppress unnecessary messages when a calling function has -Whatif:$true enabled.
+		Remove-Variable -Name ModuleList, FunctionList, EAPsaved, TMDBReadOnlyToken, Directory, MovieName, ReleaseYear, headers, response -WhatIf:$false #TODO: When function is production ready uncomment the -ErrorAcction parameter # -ErrorAction SilentlyContinue # Using -WhatIf:$false to suppress unnecessary messages when a calling function has -Whatif:$true enabled.
 
 		[System.GC]::Collect() # Memory cleanup
-		$ErrorActionPreference = $EAPsaved
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - End block end"
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function ended."

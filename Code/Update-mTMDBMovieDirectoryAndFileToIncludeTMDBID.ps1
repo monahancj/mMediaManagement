@@ -47,9 +47,9 @@ function Update-mTMDBMovieDirectoryAndFileToIncludeTMDBID {
 	[cmdletbinding(SupportsShouldProcess = $true, ConfirmImpact = "Medium", PositionalBinding = $true, SupportsPaging = $false, SupportsTransactions = $false, RemotingCapability = 'None', HelpUri = "changeme")]#TODO: Evaluate which cmdletbinding options are appropriate for the script.
 
 	param (
-		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $false)][System.string]$Directory,
+		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken,
 		[Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $false)][int]$TMDBMovieId,
-		[Parameter(Position = 2, Mandatory = $true, ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken
+		[Parameter(Position = 2, Mandatory = $true, ValueFromPipeline = $false)][System.string]$Directory
 	)
 
 	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
@@ -101,9 +101,6 @@ function Update-mTMDBMovieDirectoryAndFileToIncludeTMDBID {
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - Directory $($Directory)" #TODO: Update parameter names.
 
-		# Save the directory.  Will revert back to the starting directory before exiting.
-		$ParentDirectory = (Get-ChildItem $Directory).Directory.Parent
-
 		# Validate the parameters as needed.
 		if (Test-Path $Directory) {
             Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -Directory as $($Directory) exists." }
@@ -112,43 +109,48 @@ function Update-mTMDBMovieDirectoryAndFileToIncludeTMDBID {
 			break
 		}
 
+<#
 		if (Test-Path $Directory) {
             Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Movie File as $($Directory) exists." }
 		else {
 			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Movie File as $($Directory) does not exist.  Exiting."
 			break
 		}
-		if ( (Get-ChildItem $Directory).BaseName -eq ((Get-ChildItem $Directory).Directory -split("\\"))[-1] ) {
-			Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Directory and movie file base names match. Proceeding.  Base name: $((Get-ChildItem $Directory).BaseName)"}
+#>
+		# Save the directory.  Will revert back to the starting directory before exiting.
+		$ParentDirectory = (Get-ChildItem $Directory)[0].Directory.Parent
+
+		if ( (Get-ChildItem $Directory)[0].BaseName -eq ((Get-ChildItem $Directory)[0].Directory.Name) ) {
+			Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Directory and movie file base names match. Proceeding.  Files: $((Get-ChildItem $Directory).BaseName)"}
 		else {
-			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Directory and movie file base names do not match. Directory base name: $(((Get-ChildItem $Directory).Directory -split("\\"))[-1]) -- Movie file base name: $(Get-ChildItem $Directory).BaseName)"
+			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Directory and movie file base names do not match. Directory base name: $((Get-ChildItem $Directory)[0].BaseName) -- Movie file base name: $(((Get-ChildItem $Directory)[0].Directory.Name))"
 		}
 
 		# Do the work
 
 		# Get the new base directory and file name using the TMDB movie id.
-		$CurrentBaseName = (gci $Directory).Directory.Name
+		$CurrentBaseName = (Get-ChildItem $Directory)[0].Directory.Name
 		$NewBaseName = Get-mTMDBMovieDirectoryBaseName -TMDBReadOnlyToken $TMDBReadOnlyToken -TMDBMovieId $TMDBMovieId
 		Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - NewBaseName: $($NewBaseName)"
 
 		# Rename the file(s) before the directory so the file variable doesn't because invalid.
-		if (Test-Path $Directory) {
-			Set-Location -Path $Directory
+#		if (Test-Path $Directory) {
+#			Set-Location -Path $Directory
+#			gci
 
-			if (Test-Path *_mkv_JRSidecar.xml) { Move-Item "$($CurrentBaseName)_mkv_JRSidecar.xml" "$($NewBaseName)_mkv_JRSidecar.xml" }
-			if (Test-Path "$($CurrentBaseName).jpg") { Move-Item "$($CurrentBaseName).jpg" "$($NewBaseName).jpg" }
-			if (Test-Path "$($CurrentBaseName).mkv") { Move-Item "$($CurrentBaseName).mkv" "$($NewBaseName).mkv" }
-			else { Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - MKV file doesn't exist: $($CurrentBaseName).mkv)" }
+			if (Test-Path "$($Directory)\$((Get-ChildItem $Directory)[0].Directory.Name)_mkv_JRSidecar.xml") { Remove-Item "$($Directory)\$((Get-ChildItem $Directory)[0].Directory.Name)_mkv_JRSidecar.xml" -Verbose }
+			if (Test-Path "$($Directory)\$($CurrentBaseName).jpg") { Move-Item "$($Directory)\$($CurrentBaseName).jpg" "$($Directory)\$($NewBaseName).jpg" -Verbose } else { Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - File not found $($CurrentBaseName).jpg."}
+			if (Test-Path "$($Directory)\$($CurrentBaseName).mkv") { Move-Item "$($Directory)\$($CurrentBaseName).mkv" "$($Directory)\$($NewBaseName).mkv" -Verbose } else { Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - File not found $($CurrentBaseName).mkv."}
 
 			Set-Location ..
-			if (Test-Path $Directory) { Move-Item $Directory $NewBaseName }
+			if (Test-Path $Directory) { Move-Item -Path $Directory -Destination "$((Get-ChildItem $Directory)[0].Directory.Parent)\$($NewBaseName)" }
 			else { Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Source directory doesn't exist: $($Directory)" }
-		}
-		else {
-			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Source directory doesn't exist: $($Directory)" }
+#		}
+#		else {
+#			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Source directory doesn't exist: $($Directory)" }
 
 		# Revert to the starting directory.
-		Set-Location $ParentDirectory
+#		Set-Location $ParentDirectory
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block end"
 

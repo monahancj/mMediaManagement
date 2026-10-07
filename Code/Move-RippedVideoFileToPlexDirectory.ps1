@@ -32,18 +32,18 @@ if (Test-Path $RippingDirectory) { Set-Location $RippingDirectory } else { throw
 Get-ChildItem $RippedDirName | Sort-Object Length  # To see if the "t00" file is the largest one.  Otherwise exit and investigate.
 Pause
 
-if ( (Test-Path $RippedDirName) -and ((Get-ChildItem "$($RippedDirName)\*t00.mkv").Count -eq 1) ) {
+if ( (Test-Path "$($RippingDirectory)$($RippedDirName)") -and ((Get-ChildItem "$($RippingDirectory)$($RippedDirName)\*t00.mkv" | Measure-Object).Count -eq 1) ) {
 
     mkdir $NewBasePath
     mkdir $NewExtrasPath
 
     # Find the main move file and move/rename it.  It's usually the "t00" file.
     Get-ChildItem -Path $RippedDirName -File | Where-Object { $_.Name -notmatch "t00" } | ForEach-Object { Move-Item $_.FullName -Destination $NewExtrasPath }
-    Get-ChildItem $RippedDirName,$NewExtrasPath  # Too see what files are there.
+    Get-ChildItem $RippedDirName, $NewExtrasPath  # Too see what files are there.
 
     # Move and rename t00 file to the Plex naming convention.
     Set-Location $NewBasePath
-    Move-Item -Path (Get-ChildItem "$($RippingDirectory)\$($RippedDirName)\*t00.mkv") -Destination ("$($base)_t00.mkv" -replace("_t00"," $($year)"))
+    Move-Item -Path (Get-ChildItem "$($RippingDirectory)\$($RippedDirName)\*t00.mkv") -Destination ("$($base)_t00.mkv" -replace ("_t00", " $($year)"))
 
     # Move and rename extra files to the Plex naming convention.
     Set-Location $RippingDirectory\$NewExtrasPath
@@ -57,8 +57,8 @@ if ( (Test-Path $RippedDirName) -and ((Get-ChildItem "$($RippedDirName)\*t00.mkv
     Get-ChildItem  # Too see what files are there.
 
     Set-Location $RippingDirectory
-    Get-ChildItem $RippedDirName,$NewBasePath,$NewExtrasPath
-    Get-ChildItem | Sort-Object LastWriteTime -Descending | Select-Object -First 9 -Property LastWriteTime,Name | Format-Table -AutoSize # To see what's next to process.
+    Get-ChildItem $RippedDirName, $NewBasePath, $NewExtrasPath
+    Get-ChildItem | Sort-Object LastWriteTime -Descending | Select-Object -First 9 -Property LastWriteTime, Name | Format-Table -AutoSize # To see what's next to process.
 
 }
 else { throw "Either the ripped movie directory doesn't exist or more than 1 t00.mkv file exists.  Ripped movie directory: $($RippedDirName)" }

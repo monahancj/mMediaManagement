@@ -8,7 +8,7 @@
 
 function Search-mTMDBMovie {
 
-<#
+	<#
 	.SYNOPSIS
 		A brief description of the function or script. This keyword can be used only once in each topic.
 
@@ -39,7 +39,7 @@ function Search-mTMDBMovie {
 #>
 	#TODO: Fill out the comment based help.
 
-<# Comment History
+	<# Comment History
 	YYYY-MM-DD username- Initial add
 #>
 
@@ -47,12 +47,13 @@ function Search-mTMDBMovie {
 	[cmdletbinding(SupportsShouldProcess = $false, ConfirmImpact = "None", PositionalBinding = $true, SupportsPaging = $false, SupportsTransactions = $false, RemotingCapability = 'None', HelpUri = "changeme")] #TODO: Evaluate which cmdletbinding options are appropriate for the script.
 
 	param (
-		[Parameter(Position = 0, Mandatory = $true,  ValueFromPipeline = $true) ][System.string]$Title,
+		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true) ][System.string]$Title,
 		[Parameter(Position = 1, Mandatory = $false, ValueFromPipeline = $false)][System.string]$ReleaseDate,
-		[Parameter(Position = 2, Mandatory = $true,  ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken
+		[Parameter(Position = 2, Mandatory = $true, ValueFromPipeline = $false)][System.string]$TMDBReadOnlyToken
 	)
 
-	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
+	begin {
+		# Code to be executed once BEFORE the pipeline is processed goes here.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
 
@@ -72,22 +73,23 @@ function Search-mTMDBMovie {
 			if (Test-Path -Path function:\"$($_)") { Write-Verbose -Message "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is not loaded in the session." }
 		}
-
+		<#
 		# Test for required modules.  Internal support modules and vendor specific technology modules in addition to the builtin Microsoft PowerShell modules.  Remove this section if it's not needed.
 		$ModuleList = "mPowerShellGenerics"
 		$ModuleList | ForEach-Object {
 			if (Test-mIsModuleLoaded -Name $_) { Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is not loaded in the session." }
 		}
-
+#>
 		# Set and Test API credential in API call headers
-		$headers=@{}
+		$headers = @{}
 		$headers.Add("accept", "application/json")
 		$headers.Add("Authorization", "Bearer $TMDBReadOnlyToken")
 
 		$response = Invoke-WebRequest -Uri 'https://api.themoviedb.org/3/authentication' -Method GET -Headers $headers
 		if ($response.StatusCode -eq 200) {
-            Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded." }
+			Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded." 
+  }
 		else {
 			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded.  Exiting."
 			break
@@ -97,7 +99,8 @@ function Search-mTMDBMovie {
 
 	} # end of the begin block
 
-	process { # Code to be executed against every object in the pipeline goes here.
+	process {
+		# Code to be executed against every object in the pipeline goes here.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - Title $($Title) - ReleaseDate $($ReleaseDate)" #TODO: Update parameter names.
 
@@ -105,16 +108,16 @@ function Search-mTMDBMovie {
 
 		# Do the work
 
-		$SearchTitle = $Title -replace(" ","+")
+		$SearchTitle = $Title -replace (" ", "+")
 
 		if ($ReleaseDate) {
 			#$ReleaseDate = [System.String]$ReleaseDate
 			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title and Search"
-			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&primary_release_year=$($ReleaseDate)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id,title,release_date,overview
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&primary_release_year=$($ReleaseDate)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id, title, release_date, overview
 		}
 		else {
 			Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Run API call with Title"
-			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id,title,release_date,overview
+			Invoke-WebRequest -Uri "https://api.themoviedb.org/3/search/movie?query=$($SearchTitle)&include_adult=false&language=en-US&page=1" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable | Select-Object -ExpandProperty Results | Select-Object id, title, release_date, overview
 			#TODO: Create Format.ps1xml file for this output.  https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_format.ps1xml?view=powershell-7.3
 		}
 
@@ -122,7 +125,8 @@ function Search-mTMDBMovie {
 
 	} #end of the process block
 
-	end {  # Code to be executed once AFTER the pipeline is processed goes here.  Disconnect server connections, remove variables, reset the transcript file if necessary, and any other cleanup.
+	end {
+  # Code to be executed once AFTER the pipeline is processed goes here.  Disconnect server connections, remove variables, reset the transcript file if necessary, and any other cleanup.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - End block start"
 		# When testing comment out "-ErrorAction SilentlyContinue".  This will help find typos, unused variables, and other problems.

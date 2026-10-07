@@ -8,7 +8,7 @@
 
 function Get-mTMDBMovieDirectoryBaseName {
 
-<#
+	<#
 	.SYNOPSIS
 		From a directory of a ripped DVD or Blu-Ray creates a movie a directory containing using The Movie Database name, release year, and TMDB Id in the standard Plex format.  Optionally moves the new directory to another directory.
 
@@ -39,7 +39,7 @@ function Get-mTMDBMovieDirectoryBaseName {
 #>
 	#TODO: Fill out the comment based help.
 
-<# Comment History
+	<# Comment History
 	YYYY-MM-DD username- Initial add
 #>
 
@@ -47,11 +47,12 @@ function Get-mTMDBMovieDirectoryBaseName {
 	[cmdletbinding(SupportsShouldProcess = $false, ConfirmImpact = "None", PositionalBinding = $true, HelpUri = "changeme")]#TODO: Evaluate which cmdletbinding options are appropriate for the script.
 
 	param (
-        [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $false)][int]$TMDBMovieId,
+		[Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $false)][int]$TMDBMovieId,
 		[Parameter(Position = 1, Mandatory = $true, ValueFromPipeline = $false)][System.String]$TMDBReadOnlyToken
 	)
 
-	begin { # Code to be executed once BEFORE the pipeline is processed goes here.
+	begin {
+		# Code to be executed once BEFORE the pipeline is processed goes here.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
 
@@ -66,37 +67,39 @@ function Get-mTMDBMovieDirectoryBaseName {
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function started."
 
 		# Test for required functions that aren't in required modules.  Remove this section if it's not needed.
-		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine","Search-mTMDBMovie"
+		$FunctionList = "Test-mIsModuleLoaded", "Get-mCurrentLine", "Search-mTMDBMovie"
 		$FunctionList | ForEach-Object {
 			if (Test-Path -Path function:\"$($_)") { Write-Verbose -Message "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Function $($_) is not loaded in the session." }
 		}
-
+		<#
 		# Test for required modules.  Internal support modules and vendor specific technology modules in addition to the builtin Microsoft PowerShell modules.  Remove this section if it's not needed.
 		$ModuleList = "mPowerShellGenerics"
 		$ModuleList | ForEach-Object {
 			if (Test-mIsModuleLoaded -Name $_) { Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is loaded in the session." }
 			else { throw "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Module $($_) is not loaded in the session." }
 		}
-
-        		# Set and Test API credential in API call headers
-		$headers=@{}
+#>
+		# Set and Test API credential in API call headers
+		$headers = @{}
 		$headers.Add("accept", "application/json")
 		$headers.Add("Authorization", "Bearer $TMDBReadOnlyToken")
 
-        $response = Invoke-WebRequest -Uri 'https://api.themoviedb.org/3/authentication' -Method GET -Headers $headers
+		$response = Invoke-WebRequest -Uri 'https://api.themoviedb.org/3/authentication' -Method GET -Headers $headers
 		if ($response.StatusCode -eq 200) {
-			Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded." }
+			Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded." 
+  }
 		else {
 			Write-Error -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Parameter -TMDBReadOnlyToken authentication succeeded.  Exiting."
 			break
 		}
 
-        Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Begin block end"
+		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Begin block end"
 
 	} # end of the begin block
 
-	process { # Code to be executed against every object in the pipeline goes here.
+	process {
+		# Code to be executed against every object in the pipeline goes here.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - Process block start - TMDBMovieId $($TMDBMovieId)"
 
@@ -107,7 +110,7 @@ function Get-mTMDBMovieDirectoryBaseName {
 		# Build the new base name containing the TMDB movie id.
 		$TMDBMovieInfo = Invoke-WebRequest -Uri "https://api.themoviedb.org/3/movie/$($TMDBMovieId)?language=en-US" -Method GET -Headers $headers | Select-Object -ExpandProperty Content | ConvertFrom-Json -AsHashtable
 		$NewBaseName = "$($TMDBMovieInfo.title) `($((($TMDBMovieInfo.release_date).Split("-"))[0])`) {tmdb-$($TMDBMovieInfo.id)}"
-		if ($NewBaseName -match ":") { $NewBaseName = $NewBaseName.Replace(":","-") }
+		if ($NewBaseName -match ":") { $NewBaseName = $NewBaseName.Replace(":", "-") }
 		Write-Verbose -Message "$(get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - NewBaseName: $($NewBaseName)"
 		return $NewBaseName
 
@@ -115,7 +118,8 @@ function Get-mTMDBMovieDirectoryBaseName {
 
 	} #end of the process block
 
-	end {  # Code to be executed once AFTER the pipeline is processed goes here.  Disconnect server connections, remove variables, reset the transcript file if necessary, and any other cleanup.
+	end {
+  # Code to be executed once AFTER the pipeline is processed goes here.  Disconnect server connections, remove variables, reset the transcript file if necessary, and any other cleanup.
 
 		Write-Verbose "$(Get-mNow)- $($MyInvocation.InvocationName) - Line $(Get-mCurrentLine) - End block start"
 		# When testing comment out "-ErrorAction SilentlyContinue".  This will help find typos, unused variables, and other problems.
